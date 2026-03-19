@@ -1,0 +1,97 @@
+/* Home.css */
+.home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #333;
+}
+
+.hero-section {
+    text-align: center;
+    padding: 4rem 2rem;
+    background-color: #f4f7f6; /* Very light gray/blue */
+    border-radius: 12px;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.hero-section h1 {
+    font-size: 2.5rem;
+    color: #1a202c;
+    margin-bottom: 1rem;
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    color: #4a5568;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+/* Responsive Grid for Articles */
+.article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+.article-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e0;
+}
+
+.article-category {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #e53e3e; /* Red accent for warnings/scams */
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.article-card h4 {
+    font-size: 1.25rem;
+    margin: 0 0 1rem 0;
+    color: #1a202c;
+}
+
+.article-card p {
+    color: #4a5568;
+    line-height: 1.6;
+    flex-grow: 1; /* Pushes the date to the bottom */
+}
+
+.article-footer {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: #a0aec0;
+    border-top: 1px solid #edf2f7;
+    padding-top: 1rem;
+}
+
+.status-message {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #718096;
+    padding: 2rem;
+}
