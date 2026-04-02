@@ -37,7 +37,6 @@ export default function App() {
 
       case "academy": return <AcademyPage t={t} lang={lang} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
 
-      case "academy": return <AcademyPage t={t} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
       case "blacklist": return <BlacklistPage t={t}/>;
       case "about": return <AboutPage t={t}/>;
       default: return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
