@@ -3,7 +3,6 @@ import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { C } from '../config/constants';
 
 export default function ArticlePage({ t, id, setPage }) {
-
     const [article, setArticle] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -70,7 +69,7 @@ export default function ArticlePage({ t, id, setPage }) {
             <div style={{ textAlign: "center", padding: "5rem", color: C.red }}>
                 <AlertTriangle size={48} style={{ margin: "0 auto 1rem" }} />
                 <h2>{error || wt.notFound}</h2>
-                <button onClick={() => navigate(-1)} style={{ marginTop: "1rem", padding: "0.5rem 1rem", borderRadius: 8, border: `1px solid ${C.border}`, background: "white", cursor: "pointer" }}>
+                <button onClick={() => setPage("wiki")} style={{ marginTop: "1rem", padding: "0.5rem 1rem", borderRadius: 8, border: `1px solid ${C.border}`, background: "white", cursor: "pointer" }}>
                     {wt.back}
                 </button>
             </div>
