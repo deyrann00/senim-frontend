@@ -1,5 +1,5 @@
 import React from "react";
-import { Mail, TrendingDown, Phone, Lock, Users, AlertTriangle, Zap, Eye, Shield } from "lucide-react";
+import { Mail, TrendingDown, Phone, Lock, Users, AlertTriangle, Zap, Eye } from "lucide-react";
 
 export const wikiCategories = [
   { id: 1, icon: <Mail size={28} />, title: "Фишинг", color: "blue", desc: "Жеке деректер мен банк реквизиттерін ұрлауға арналған жалған хаттар, SMS және сайттар.", tags: ["Email", "SMS", "Жалған сайттар"] },

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { ArrowRight, ChevronRight, Check, X } from "lucide-react";
 import { quizzes, COLORS } from "../data";
 
 function DiffBadge({ level }) {

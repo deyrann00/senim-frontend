@@ -250,7 +250,7 @@ export const QUIZZES = [
 ];
 
 export function anonymize(text) {
-  let t = text.replace(/\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}\b/g, "****-****-****-****");
+  let t = text.replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, "****-****-****-****");
   t = t.replace(/\b\d{12}\b/g, "****-****-****");
   return t;
 }
