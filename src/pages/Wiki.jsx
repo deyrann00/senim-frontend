@@ -2,15 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronRight, AlertTriangle, CheckCircle } from 'lucide-react';
 import { C } from '../config/constants';
 import { Modal } from '../components/UI';
-import { useNavigate } from 'react-router-dom';
 
 export default function WikiPage({ t, setPage, setSelectedArticleId }) {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [scheme, setScheme] = useState("");
   const [submitted, setSubmitted] = useState(false);
-
-  const navigate = useNavigate();
 
   // Backend data states
   const [wikiData, setWikiData] = useState([]);
