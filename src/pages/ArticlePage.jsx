@@ -61,7 +61,7 @@ export default function ArticlePage({ t, id, setPage }) {
     };
 
     if (loading) {
-        return <div style={{ textAlign: "center", padding: "5rem", color: C.gray }}>Загрузка...</div>;
+        return <div style={{ textAlign: "center", padding: "5rem", color: C.gray }}>{wt.loading}</div>;
     }
 
     if (error || !article) {
