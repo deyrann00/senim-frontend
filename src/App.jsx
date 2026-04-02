@@ -6,12 +6,12 @@ import WikiPage from "./pages/Wiki";
 import AcademyPage from "./pages/Academy";
 import BlacklistPage from "./pages/Blacklist";
 import AboutPage from "./pages/About";
-import ArticlePage from "./pages/ArticlePage"; // 1. Импорт новой страницы
+import ArticlePage from "./pages/ArticlePage";
 import "./index.css";
 
 export default function App() {
   const [page, setPage] = useState("home");
-  const [selectedArticleId, setSelectedArticleId] = useState(null); // 2. Состояние для выбранной статьи
+  const [selectedArticleId, setSelectedArticleId] = useState(null);
 
   const [lang, setLang] = useState("kz");
   const t = TRANSLATIONS[lang];
@@ -31,15 +31,26 @@ export default function App() {
 
   const renderPage = () => {
     switch(page) {
-      case "home": return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
+      case "home":
+        return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
 
-      case "wiki": return <WikiPage t={t} setPage={setPage} setSelectedArticleId={setSelectedArticleId} />;
+      case "wiki":
+        return <WikiPage t={t} setPage={setPage} setSelectedArticleId={setSelectedArticleId} />;
 
-      case "academy": return <AcademyPage t={t} lang={lang} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
+      case "article":
+        return <ArticlePage t={t} id={selectedArticleId} setPage={setPage} />;
 
-      case "blacklist": return <BlacklistPage t={t}/>;
-      case "about": return <AboutPage t={t}/>;
-      default: return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
+      case "academy":
+        return <AcademyPage t={t} lang={lang} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
+
+      case "blacklist":
+        return <BlacklistPage t={t}/>;
+
+      case "about":
+        return <AboutPage t={t}/>;
+
+      default:
+        return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
     }
   };
 
