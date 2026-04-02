@@ -6,7 +6,7 @@ function Blacklist() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const baseUrl = "senim-backend-production.up.railway.app" || 'http://localhost:8080';
+        const baseUrl = "https://senim-backend-production.up.railway.app" || 'http://localhost:8080';
 
         fetch(`${baseUrl}/api/funds`)
             .then(response => {
