@@ -3,8 +3,6 @@ import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { C } from '../config/constants';
 
 export default function ArticlePage({ t, id, setPage }) {
-    const { id } = useParams();
-    const navigate = useNavigate();
 
     const [article, setArticle] = useState(null);
     const [loading, setLoading] = useState(true);
