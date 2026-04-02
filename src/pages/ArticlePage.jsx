@@ -97,7 +97,7 @@ export default function ArticlePage({ t, id, setPage }) {
                <span style={{ background: "rgba(255,255,255,0.2)", color: "white", fontSize: 12, padding: "4px 10px", borderRadius: 20, fontWeight: 500, display: "inline-block", marginBottom: 8 }}>
                  {article.scamCategory}
                </span>
-                            <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{article.title}</h1>
+                            <h1 style={{ fontSize: "2rem", fontWeight: 700, marginTop: "0.5rem", marginBottom: "1.5rem", lineHeight: 1.2 }}>{article.title}</h1>
                         </div>
                     </div>
                 </div>
