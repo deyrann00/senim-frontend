@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './Blacklist.css'; // Optional: Create this to style your cards
 
 function Blacklist() {
     const [funds, setFunds] = useState([]);
