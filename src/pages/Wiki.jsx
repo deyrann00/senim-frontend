@@ -2,12 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronRight, AlertTriangle, CheckCircle } from 'lucide-react';
 import { C } from '../config/constants';
 import { Modal } from '../components/UI';
+import { useNavigate } from 'react-router-dom';
 
-export default function WikiPage({ t }) {
+export default function WikiPage({ t, setPage, setSelectedArticleId }) {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [scheme, setScheme] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  const navigate = useNavigate();
 
   // Backend data states
   const [wikiData, setWikiData] = useState([]);
@@ -116,7 +119,13 @@ export default function WikiPage({ t }) {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {c.tags.map(tag => <span key={tag} style={{ background: cm.bg, color: cm.text, fontSize: 11, padding: "3px 9px", borderRadius: 20, fontWeight: 500 }}>{tag}</span>)}
                     </div>
-                    <button style={{ marginTop: "auto", background: "none", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "0.55rem 1rem", fontSize: 13, fontWeight: 500, color: C.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                    <button
+                        onClick={() => {
+                          setSelectedArticleId(c.id);
+                          setPage("article");
+                        }}
+                        style={{ marginTop: "auto", background: "none", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "0.55rem 1rem", fontSize: 13, fontWeight: 500, color: C.blue, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
                       {wt.more} <ChevronRight size={14}/>
                     </button>
                   </div>

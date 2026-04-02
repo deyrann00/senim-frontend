@@ -6,10 +6,13 @@ import WikiPage from "./pages/Wiki";
 import AcademyPage from "./pages/Academy";
 import BlacklistPage from "./pages/Blacklist";
 import AboutPage from "./pages/About";
-import "./index.css"; // Импорт шрифта и анимаций
+import ArticlePage from "./pages/ArticlePage"; // 1. Импорт новой страницы
+import "./index.css";
 
 export default function App() {
   const [page, setPage] = useState("home");
+  const [selectedArticleId, setSelectedArticleId] = useState(null); // 2. Состояние для выбранной статьи
+
   const [lang, setLang] = useState("kz");
   const t = TRANSLATIONS[lang];
 
@@ -29,7 +32,11 @@ export default function App() {
   const renderPage = () => {
     switch(page) {
       case "home": return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
-      case "wiki": return <WikiPage t={t}/>;
+
+      case "wiki": return <WikiPage t={t} setPage={setPage} setSelectedArticleId={setSelectedArticleId} />;
+
+      case "article": return <ArticlePage t={t} id={selectedArticleId} setPage={setPage} />;
+
       case "academy": return <AcademyPage t={t} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
       case "blacklist": return <BlacklistPage t={t}/>;
       case "about": return <AboutPage t={t}/>;
@@ -38,10 +45,10 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column" }}>
-      <Navbar page={page} setPage={setPage} lang={lang} setLang={setLang} t={t} safetyScore={safetyScore}/>
-      <main style={{ flex:1 }}>{renderPage()}</main>
-      <Footer t={t}/>
-    </div>
+      <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column" }}>
+        <Navbar page={page} setPage={setPage} lang={lang} setLang={setLang} t={t} safetyScore={safetyScore}/>
+        <main style={{ flex:1 }}>{renderPage()}</main>
+        <Footer t={t}/>
+      </div>
   );
 }
