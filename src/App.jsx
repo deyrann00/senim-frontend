@@ -35,7 +35,7 @@ export default function App() {
 
       case "wiki": return <WikiPage t={t} setPage={setPage} setSelectedArticleId={setSelectedArticleId} />;
 
-      case "article": return <ArticlePage t={t} id={selectedArticleId} setPage={setPage} />;
+      case "academy": return <AcademyPage t={t} lang={lang} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
 
       case "academy": return <AcademyPage t={t} safetyScore={safetyScore} setSafetyScore={setSafetyScore}/>;
       case "blacklist": return <BlacklistPage t={t}/>;
