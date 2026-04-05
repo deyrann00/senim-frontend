@@ -20,7 +20,8 @@ export default function AboutPage({ t }) {
           </p>
         </section>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "3rem 1.25rem" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+          {/* ОСЫ ЖЕР ӨЗГЕРТІЛДІ: 1fr 1fr орнына auto-fit қойылды */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem" }}>
             <div>
               <h2 style={{ fontWeight: 700, fontSize: "1.3rem", color: COLORS.blue, marginBottom: "1.25rem" }}>
                 {at?.contactTitle || "Бізбен байланыс"}
@@ -31,20 +32,20 @@ export default function AboutPage({ t }) {
                         value={form.name}
                         onChange={e => setForm(p => ({...p, name: e.target.value}))}
                         placeholder={at?.namePh || "Атыңыз"}
-                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14 }}
+                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                     />
                     <input
                         value={form.email}
                         onChange={e => setForm(p => ({...p, email: e.target.value}))}
                         placeholder={at?.emailPh || "Email мекенжайы"}
-                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14 }}
+                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                     />
                     <textarea
                         value={form.msg}
                         onChange={e => setForm(p => ({...p, msg: e.target.value}))}
                         placeholder={at?.msgPh || "Хабарламаңыз..."}
                         rows={4}
-                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14 }}
+                        style={{ padding: "0.7rem 1rem", border: `1.5px solid ${COLORS.border}`, borderRadius: 10, fontSize: 14, resize: "vertical", outline: "none", boxSizing: "border-box" }}
                     />
                     <button
                         onClick={() => setSent(true)}
@@ -62,6 +63,7 @@ export default function AboutPage({ t }) {
                   </div>
               )}
             </div>
+            
             <div>
               <h2 style={{ fontWeight: 700, fontSize: "1.3rem", color: COLORS.blue, marginBottom: "1.25rem" }}>
                 {at?.reportTitle || "Алаяқтық туралы хабарлау"}
@@ -69,7 +71,7 @@ export default function AboutPage({ t }) {
               <p style={{ color: COLORS.gray, fontSize: 14, lineHeight: 1.7, marginBottom: "1.25rem" }}>
                 {at?.reportDesc || "Жаңа алаяқтық түрін немесе тізімде жоқ күдікті ұйымды таптыңыз ба? Telegram ботымыз арқылы тікелей хабарлаңыз."}
               </p>
-              <a href="https://t.me/senimwiki_bot" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, background: "#0088cc", color: "white", borderRadius: 12, padding: "1rem 1.5rem", textDecoration: "none", fontWeight: 600, fontSize: 15, marginBottom: "1rem" }}>
+              <a href="https://t.me/senimwiki_bot" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#0088cc", color: "white", borderRadius: 12, padding: "1rem 1.5rem", textDecoration: "none", fontWeight: 600, fontSize: 15, marginBottom: "1rem" }}>
                 <Send size={18} /> {at?.telegramBtn || "Telegram бот арқылы жіберу"}
               </a>
               <div style={{ background: COLORS.amberLight, border: `1px solid #fcd34d`, borderRadius: 12, padding: "1rem 1.25rem" }}>

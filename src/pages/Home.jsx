@@ -208,10 +208,12 @@ export default function HomePage({ setPage, t }) {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "4rem 1.25rem" }}>
+       <section style={{ maxWidth: 1100, margin: "0 auto", padding: "4rem 1.25rem" }}>
           <h2 style={{ textAlign: "center", fontSize: "1.6rem", fontWeight: 700, color: COLORS.blue, marginBottom: "0.5rem" }}>{ht?.hiwTitle || "Бұл қалай жұмыс істейді"}</h2>
           <p style={{ textAlign: "center", color: COLORS.gray, marginBottom: "2.5rem" }}>{ht?.hiwSub || "Күдікті хабарламаны тексерудің үш қадамы"}</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+          
+          {/* ОСЫ ЖЕР ӨЗГЕРТІЛДІ: Мобильді құрылғыларға арналған адаптивті тор */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
             {[
               { n: "01", icon: <MessageSquare size={28} color={COLORS.blue} />, title: ht?.step1Title || "Деректі енгізіңіз", desc: ht?.step1Desc || "Мәтінді көшіріңіз немесе чат скриншотын (файлды) жүктеңіз." },
               { n: "02", icon: <Search size={28} color={COLORS.blue} />, title: ht?.step2Title || "ЖИ талдауы (OCR)", desc: ht?.step2Desc || "AI суреттегі мәтінді оқып, манипуляция мен алаяқтық үлгілерін тексереді." },
