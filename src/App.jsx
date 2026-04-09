@@ -8,14 +8,18 @@ import BlacklistPage from "./pages/Blacklist";
 import AboutPage from "./pages/About";
 import ArticlePage from "./pages/ArticlePage";
 import AdminPanel from "./pages/AdminPanel";
+import AdminLogin from "./pages/AdminLogin"; // <--- ЖАҢА ИМПОРТ
 import "./index.css";
 
 
 export default function App() {
   const [page, setPage] = useState("home");
   const [selectedArticleId, setSelectedArticleId] = useState(null);
-
   const [lang, setLang] = useState("kz");
+
+  // АДМИН СТЕЙТІ
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const t = TRANSLATIONS[lang];
 
   const [safetyScore, setSafetyScore] = useState(() => {
@@ -33,9 +37,13 @@ export default function App() {
 
   const renderPage = () => {
     switch(page) {
+      case "login":
+        return <AdminLogin setPage={setPage} setIsAdmin={setIsAdmin} />;
+
       case "admin":
-        return <AdminPanel />;
-        
+        // Егер логин жасалмаған болса, логин бетіне жібереді
+        return isAdmin ? <AdminPanel /> : <AdminLogin setPage={setPage} setIsAdmin={setIsAdmin} />;
+
       case "home":
         return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
 
@@ -61,9 +69,11 @@ export default function App() {
 
   return (
       <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column" }}>
-        <Navbar page={page} setPage={setPage} lang={lang} setLang={setLang} t={t} safetyScore={safetyScore}/>
+        {/* NAVBAR-ҒА ISADMIN ПРОПСЫН БЕРЕМІЗ */}
+        <Navbar page={page} setPage={setPage} lang={lang} setLang={setLang} t={t} safetyScore={safetyScore} isAdmin={isAdmin} />
         <main style={{ flex:1 }}>{renderPage()}</main>
-        <Footer t={t}/>
+        {/* FOOTER-ГЕ SETPAGE ПРОПСЫН БЕРЕМІЗ */}
+        <Footer t={t} setPage={setPage} />
       </div>
   );
 }
