@@ -165,6 +165,8 @@ function WikiModule() {
 
   const empty = { title_kz: "", title_ru: "", content_kz: "", content_ru: "", scamCategory: "", imageUrl: "" };
   const [form, setForm] = useState(empty);
+  // Добавляем состояние для хранения ID редактируемой статьи
+  const [editId, setEditId] = useState(null);
 
   const notify = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -178,12 +180,42 @@ function WikiModule() {
   };
   useEffect(load, []);
 
+  // Функция для входа в режим редактирования
+  const handleEdit = (article) => {
+    setEditId(article.id);
+    setForm({
+      title_kz: article.title_kz || "",
+      title_ru: article.title_ru || "",
+      content_kz: article.content_kz || "",
+      content_ru: article.content_ru || "",
+      scamCategory: article.scamCategory || "",
+      imageUrl: article.imageUrl || ""
+    });
+    setView("form");
+  };
+
+  // Функция удаления
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this article?")) return;
+    try {
+      const r = await fetch(`${API}/api/articles/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+      notify("Article deleted");
+      load();
+    } catch { notify("Failed to delete article", "error"); }
+  };
+
   const submit = async () => {
     if (!form.title_kz.trim() && !form.title_ru.trim()) return;
     setSaving(true);
+    
+    // Определяем метод и URL в зависимости от того, редактируем мы или создаем
+    const method = editId ? "PUT" : "POST";
+    const url = editId ? `${API}/api/articles/${editId}` : `${API}/api/articles`;
+
     try {
-      const r = await fetch(`${API}/api/articles`, {
-        method: "POST",
+      const r = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: form.title_kz || form.title_ru,
@@ -194,10 +226,21 @@ function WikiModule() {
         }),
       });
       if (!r.ok) throw new Error();
-      notify("Article saved!");
-      setForm(empty); setView("list"); load();
+      
+      notify(editId ? "Article updated!" : "Article saved!");
+      setForm(empty); 
+      setEditId(null);
+      setView("list"); 
+      load();
     } catch { notify("Failed to save article", "error"); }
     finally { setSaving(false); }
+  };
+
+  // Сброс формы при отмене
+  const cancelEdit = () => {
+    setForm(empty);
+    setEditId(null);
+    setView("list");
   };
 
   return (
@@ -208,14 +251,16 @@ function WikiModule() {
         sub={`${articles.length} articles in the knowledge base`}
         action={
           view === "list"
-            ? <Btn onClick={() => setView("form")}><Plus size={14} />New Article</Btn>
-            : <Btn variant="ghost" onClick={() => setView("list")}><ArrowLeft size={14} />Back</Btn>
+            ? <Btn onClick={() => { setEditId(null); setForm(empty); setView("form"); }}><Plus size={14} />New Article</Btn>
+            : <Btn variant="ghost" onClick={cancelEdit}><ArrowLeft size={14} />Back</Btn>
         }
       />
 
       {view === "form" && (
         <Card style={{ padding: 24, marginBottom: 20 }}>
-          <p style={{ fontWeight: 700, fontSize: 15, color: T.primary, margin: "0 0 18px" }}>Add New Article</p>
+          <p style={{ fontWeight: 700, fontSize: 15, color: T.primary, margin: "0 0 18px" }}>
+            {editId ? "Edit Article" : "Add New Article"}
+          </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
             <Field label="Scam Category">
@@ -254,9 +299,9 @@ function WikiModule() {
           <FillPills fields={[["KZ title", form.title_kz], ["RU title", form.title_ru], ["KZ content", form.content_kz], ["RU content", form.content_ru]]} />
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <Btn variant="ghost" onClick={() => setView("list")}>Cancel</Btn>
+            <Btn variant="ghost" onClick={cancelEdit}>Cancel</Btn>
             <Btn onClick={submit} disabled={saving || (!form.title_kz.trim() && !form.title_ru.trim())}>
-              {saving ? <><Spin />Saving…</> : <><Save size={14} />Save Article</>}
+              {saving ? <><Spin />Saving…</> : <><Save size={14} />{editId ? "Update Article" : "Save Article"}</>}
             </Btn>
           </div>
         </Card>
@@ -287,7 +332,12 @@ function WikiModule() {
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, color: T.sub }}>{a.scamCategory}</p>
               </div>
-              {a.createdAt && <span style={{ fontSize: 12, color: T.sub, flexShrink: 0 }}>{new Date(a.createdAt).toLocaleDateString()}</span>}
+              
+              {/* Добавляем кнопки управления */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <Btn size="sm" variant="ghost" onClick={() => handleEdit(a)}>Edit</Btn>
+                <Btn size="sm" variant="danger" onClick={() => handleDelete(a.id)}><Trash2 size={14} /></Btn>
+              </div>
             </div>
           ))}
         </Card>
@@ -295,7 +345,6 @@ function WikiModule() {
     </div>
   );
 }
-
 // ─── QUIZ MODULE ───────────────────────────────────────────────────────────────
 function QuizModule() {
   const [toast, setToast] = useState(null);
@@ -505,7 +554,6 @@ function ReportsModule() {
   );
 }
 
-// ─── BLACKLIST MODULE ──────────────────────────────────────────────────────────
 function BlacklistModule() {
   const [funds, setFunds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -516,21 +564,58 @@ function BlacklistModule() {
 
   const empty = { name_kz: "", name_ru: "", description_kz: "", description_ru: "", reason_kz: "", reason_ru: "", status: "Suspicious" };
   const [form, setForm] = useState(empty);
+  // Добавляем состояние для ID редактируемой записи
+  const [editId, setEditId] = useState(null);
+
   const notify = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const load = () => {
     setLoading(true);
-    fetch(`${API}/api/funds`).then(r => r.json()).then(d => { setFunds(d); setLoading(false); }).catch(() => setLoading(false));
+    fetch(`${API}/api/funds`)
+      .then(r => r.json())
+      .then(d => { setFunds(d); setLoading(false); })
+      .catch(() => setLoading(false));
   };
   useEffect(load, []);
+
+  // Функция для входа в режим редактирования
+  const handleEdit = (item) => {
+    setEditId(item.id);
+    setForm({
+      name_kz: item.name_kz || "",
+      name_ru: item.name_ru || "",
+      description_kz: item.description_kz || "",
+      description_ru: item.description_ru || "",
+      reason_kz: item.reason_kz || "",
+      reason_ru: item.reason_ru || "",
+      status: item.status || "Suspicious"
+    });
+    setView("form");
+  };
+
+  // Функция удаления
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this entity?")) return;
+    try {
+      const r = await fetch(`${API}/api/funds/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+      notify("Entity removed from blacklist");
+      load();
+    } catch { notify("Failed to delete entity", "error"); }
+  };
 
   const submit = async () => {
     if (!form.name_kz.trim() && !form.name_ru.trim()) return;
     setSaving(true);
+
+    const method = editId ? "PUT" : "POST";
+    const url = editId ? `${API}/api/funds/${editId}` : `${API}/api/funds`;
+
     try {
-      const r = await fetch(`${API}/api/funds`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name_kz || form.name_ru,
           name_kz: form.name_kz, name_ru: form.name_ru,
@@ -542,9 +627,19 @@ function BlacklistModule() {
         }),
       });
       if (!r.ok) throw new Error();
-      notify("Entity added!"); setForm(empty); setView("list"); load();
-    } catch { notify("Failed to add entity", "error"); }
+      notify(editId ? "Entity updated!" : "Entity added!");
+      setForm(empty);
+      setEditId(null);
+      setView("list");
+      load();
+    } catch { notify("Failed to save entity", "error"); }
     finally { setSaving(false); }
+  };
+
+  const cancelEdit = () => {
+    setForm(empty);
+    setEditId(null);
+    setView("list");
   };
 
   const statusColor = s => ({ "Confirmed Fraud": T.red, "Suspicious": T.amber, "Under Review": T.gray }[s] || T.gray);
@@ -557,14 +652,16 @@ function BlacklistModule() {
         sub={`${funds.length} entities on record`}
         action={
           view === "list"
-            ? <Btn onClick={() => setView("form")}><Plus size={14} />Add Entity</Btn>
-            : <Btn variant="ghost" onClick={() => setView("list")}><ArrowLeft size={14} />Back</Btn>
+            ? <Btn onClick={() => { setEditId(null); setForm(empty); setView("form"); }}><Plus size={14} />Add Entity</Btn>
+            : <Btn variant="ghost" onClick={cancelEdit}><ArrowLeft size={14} />Back</Btn>
         }
       />
 
       {view === "form" && (
         <Card style={{ padding: 24, marginBottom: 20 }}>
-          <p style={{ fontWeight: 700, fontSize: 15, color: T.primary, margin: "0 0 18px" }}>Add to Blacklist</p>
+          <p style={{ fontWeight: 700, fontSize: 15, color: T.primary, margin: "0 0 18px" }}>
+            {editId ? "Edit Entity" : "Add to Blacklist"}
+          </p>
           <Field label="Status" style={{ maxWidth: 260, marginBottom: 18 }}>
             <Select value={form.status} onChange={e => set("status", e.target.value)}>
               <option>Confirmed Fraud</option>
@@ -592,9 +689,9 @@ function BlacklistModule() {
           <FillPills fields={[["KZ name", form.name_kz], ["RU name", form.name_ru], ["KZ desc", form.description_kz], ["RU desc", form.description_ru]]} />
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <Btn variant="ghost" onClick={() => setView("list")}>Cancel</Btn>
-            <Btn variant="danger" onClick={submit} disabled={saving || (!form.name_kz.trim() && !form.name_ru.trim())}>
-              {saving ? <><Spin />Saving…</> : <><ShieldAlert size={14} />Add to Blacklist</>}
+            <Btn variant="ghost" onClick={cancelEdit}>Cancel</Btn>
+            <Btn variant={editId ? "primary" : "danger"} onClick={submit} disabled={saving || (!form.name_kz.trim() && !form.name_ru.trim())}>
+              {saving ? <><Spin />Saving…</> : <><ShieldAlert size={14} />{editId ? "Update Entity" : "Add to Blacklist"}</>}
             </Btn>
           </div>
         </Card>
@@ -624,6 +721,12 @@ function BlacklistModule() {
                 </div>
                 {(f.description_kz || f.description) && <p style={{ margin: "2px 0 0", fontSize: 13, color: T.sub }}>{f.description_kz || f.description}</p>}
                 {(f.reason_kz || f.reason) && <p style={{ margin: "2px 0 0", fontSize: 12, color: T.gray, fontStyle: "italic" }}>Reason: {f.reason_kz || f.reason}</p>}
+              </div>
+
+              {/* Кнопки управления */}
+              <div style={{ display: "flex", gap: 8, alignSelf: "center" }}>
+                <Btn size="sm" variant="ghost" onClick={() => handleEdit(f)}>Edit</Btn>
+                <Btn size="sm" variant="danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></Btn>
               </div>
             </div>
           ))}
