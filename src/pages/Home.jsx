@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react";
-import { Shield, Search, MessageSquare, ArrowRight, CheckCircle, XCircle, UploadCloud, FileImage } from "lucide-react";
+import { Shield, ShieldAlert, Search, MessageSquare, ArrowRight, CheckCircle, XCircle, UploadCloud, FileImage } from "lucide-react";
 import { COLORS } from "../data";
 import Tesseract from 'tesseract.js';
+import { ALL_FRAUD_KEYWORDS, SUSPICIOUS_DOMAINS } from "../config/fraudData";
 
 export default function HomePage({ setPage, t }) {
   const ht = t?.home || {}; // Load translations
@@ -14,59 +15,62 @@ export default function HomePage({ setPage, t }) {
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
-
+  const performFraudAnalysis = (input) => {
+  const lowerContent = input.toLowerCase();
+  
+  // 1. Поиск совпадений по ключевым словам
+  const hits = ALL_FRAUD_KEYWORDS.filter(word => 
+    lowerContent.includes(word.toLowerCase())
+  );
+  
+  // 2. Поиск подозрительных доменов
+  const domainHits = SUSPICIOUS_DOMAINS.filter(domain => 
+    lowerContent.includes(domain)
+  );
+  
+  // 3. Расчет баллов (например, 20% за каждое слово, 35% за домен)
+  let score = (hits.length * 20) + (domainHits.length * 35);
+  const finalScore = Math.min(score, 100);
+  
+  return {
+    score: finalScore,
+    hits: [...new Set([...hits, ...domainHits])], // Объединяем результаты без дубликатов
+    safe: finalScore < 30
+  };
+  };
   const checkText = () => {
-    if (!text.trim()) return;
-    setLoading(true);
-    setResult(null);
-    setRecognizedText("");
+  if (!text.trim()) return;
+  setLoading(true);
+  setResult(null);
+
+  setTimeout(() => {
+    const analysis = performFraudAnalysis(text);
+    setResult({ ...analysis, type: "text" });
+    setLoading(false);
+  }, 1000);
+  };
+  const analyzeFile = async (uploadedFile) => {
+  if (!uploadedFile) return;
+  setLoading(true);
+  setResult(null);
+  setRecognizedText("");
+
+  try {
+    const { data: { text: extractedText } } = await Tesseract.recognize(
+      uploadedFile,
+      'kaz+rus'
+    );
+    setRecognizedText(extractedText);
 
     setTimeout(() => {
-      const fraudKeywords = ["ұтыс", "сыйлық", "осында басыңыз", "шұғыл", "банк шоты", "растау", "құпия сөз", "тегін ақша", "инвестиция", "табыс", "пирамида", "крипто бонус"];
-      const lower = text.toLowerCase();
-      const hits = fraudKeywords.filter(k => lower.includes(k));
-      const score = Math.min(hits.length * 25, 100);
-      setResult({ score, hits, safe: score < 30, type: "text" });
+      const analysis = performFraudAnalysis(extractedText);
+      setResult({ ...analysis, type: "file" });
       setLoading(false);
-    }, 1200);
-  };
-
-  const analyzeFile = async (uploadedFile) => {
-    if (!uploadedFile) return;
-    setLoading(true);
-    setResult(null);
-    setRecognizedText("");
-
-    try {
-      const { data: { text: extractedText } } = await Tesseract.recognize(
-          uploadedFile,
-          'kaz+rus',
-          { logger: m => console.log(m) }
-      );
-
-      setRecognizedText(extractedText);
-
-      setTimeout(() => {
-        const fraudKeywords = ["ұтыс", "шұғыл", "инвестиция", "карта", "код", "перевод", "сыйлық", "акция"];
-        const lower = extractedText.toLowerCase();
-        const hits = fraudKeywords.filter(k => lower.includes(k));
-
-        const baseScore = hits.length > 0 ? hits.length * 30 : Math.floor(Math.random() * 40);
-        const finalScore = Math.min(baseScore, 100);
-
-        setResult({
-          score: finalScore,
-          hits: hits,
-          safe: finalScore < 30,
-          type: "file"
-        });
-        setLoading(false);
-      }, 1000);
-
-    } catch (error) {
-      console.error("Ошибка OCR:", error);
-      setLoading(false);
-    }
+    }, 800);
+  } catch (error) {
+    console.error("OCR Error:", error);
+    setLoading(false);
+  }
   };
 
   const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
@@ -144,7 +148,7 @@ export default function HomePage({ setPage, t }) {
                   >
                     <input type="file" accept="image/*" style={{ display: "none" }} ref={fileInputRef} onChange={handleFileChange} />
                     {loading ? (
-                        <div style={{ color: COLORS.blue, fontWeight: 600 }}>{ht?.ocrLoading || "AI чатты оқуда (OCR)... Күте тұрыңыз"}</div>
+                        <div style={{ color: COLORS.blue, fontWeight: 600 }}>{ht?.ocrLoading || "OCR чатты оқуда ... Күте тұрыңыз"}</div>
                     ) : file ? (
                         <div style={{ color: COLORS.green, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                           <FileImage size={20} /> {file.name} {ht?.fileLoaded || "жүктелді. Өзгерту үшін басыңыз."}
@@ -178,6 +182,47 @@ export default function HomePage({ setPage, t }) {
                         </p>
                       </div>
                     </div>
+                    
+                    {/* БЛОК ДЕЙСТВИЙ ПРИ RISK >= 75% */}
+{result.score >= 75 && (
+  <div style={{ 
+    background: "#fff5f5", border: "1px solid #dc2626", borderRadius: 12, padding: "1.25rem", 
+    boxShadow: "0 4px 12px rgba(220, 38, 38, 0.1)" 
+  }}>
+    <p style={{ fontSize: 14, fontWeight: 700, color: "#991b1b", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: 8 }}>
+      <ShieldAlert size={18} /> {t?.home?.actionTitle || "Шұғыл іс-қимылдар / Экстренные действия:"}
+    </p>
+    
+    <ul style={{ fontSize: 13, color: "#4b5563", paddingLeft: "1.2rem", marginBottom: "1rem", lineHeight: "1.5" }}>
+      <li>
+        <b>{t?.home?.stepBank || "Банктік картаны бұғаттаңыз"}:</b> 1477
+      </li>
+      <li>
+        <b>{t?.home?.stepPolice || "Полицияға хабарлаңыз"}:</b> 102
+      </li>
+      <li>
+        <b>{t?.home?.stepEgov || "Арыз беріңіз"}:</b> e-Otinish
+      </li>
+    </ul>
+
+    <div style={{ display: "flex", gap: "0.5rem" }}>
+      <a href="tel:102" style={{ 
+        flex: 1, background: "#dc2626", color: "white", textDecoration: "none", 
+        padding: "0.7rem", borderRadius: 8, fontSize: 14, fontWeight: 700, 
+        textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 
+      }}>
+         102 ({t?.home?.policeBtn || "Полиция"})
+      </a>
+      <a href="https://egov.kz/cms/ru/services/e_app" target="_blank" rel="noreferrer" style={{ 
+        flex: 1, background: COLORS.blue, color: "white", textDecoration: "none", 
+        padding: "0.7rem", borderRadius: 8, fontSize: 14, fontWeight: 700, 
+        textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 
+      }}>
+        {t?.home?.egovBtn || "e-Otinish ашу"}
+      </a>
+    </div>
+  </div>
+)}
 
                     {mode === "file" && recognizedText && (
                         <div style={{ background: COLORS.grayLight, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "1rem", textAlign: "left" }}>
