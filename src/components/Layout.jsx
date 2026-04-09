@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, BookOpen, Award, Database, Info, Globe, Menu, X } from 'lucide-react';
+import { Shield, BookOpen, Award, Database, Info, Globe, Menu, X, LayoutDashboard } from 'lucide-react';
 import { C } from '../config/constants';
 
 export function Navbar({ page, setPage, lang, setLang, t, safetyScore }) {
@@ -20,6 +20,7 @@ export function Navbar({ page, setPage, lang, setLang, t, safetyScore }) {
     { id:"academy", label:t.nav.academy, icon:<Award size={15}/> },
     { id:"blacklist", label:t.nav.blacklist, icon:<Database size={15}/> },
     { id:"about", label:t.nav.about, icon:<Info size={15}/> },
+    { id: "admin", label: "Admin", icon: <LayoutDashboard size={15}/> }
   ];
 
   return (

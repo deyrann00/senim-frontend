@@ -7,7 +7,9 @@ import AcademyPage from "./pages/Academy";
 import BlacklistPage from "./pages/Blacklist";
 import AboutPage from "./pages/About";
 import ArticlePage from "./pages/ArticlePage";
+import AdminPanel from "./pages/AdminPanel";
 import "./index.css";
+
 
 export default function App() {
   const [page, setPage] = useState("home");
@@ -31,6 +33,9 @@ export default function App() {
 
   const renderPage = () => {
     switch(page) {
+      case "admin":
+        return <AdminPanel />;
+        
       case "home":
         return <HomePage setPage={setPage} t={t} scannerState={scannerState} setScannerState={setScannerState}/>;
 
