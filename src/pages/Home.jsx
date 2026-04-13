@@ -5,126 +5,6 @@ import {
 } from "lucide-react";
 import { COLORS } from "../data";
 
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-// ─────────────────────────────────────────────
-// ШАГ 1: OCR — Llama 4 Scout читает скриншот
-// Принимает File, возвращает строку с текстом
-// ─────────────────────────────────────────────
-const extractTextFromImage = async (imageFile) => {
-  const apiKey = process.env.REACT_APP_GROQ_API_KEY;
-
-  // Конвертируем файл в base64
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = () => reject(new Error("Файлды оқу қатесі"));
-    reader.readAsDataURL(imageFile);
-  });
-
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct", // Vision модель — OCR
-      temperature: 0.1,
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:${imageFile.type};base64,${base64}` },
-            },
-            {
-              type: "text",
-              text: `Ты OCR-система. Прочитай ВЕСЬ текст на этом скриншоте максимально точно.
-Сохрани оригинальный язык (казахский, русский или английский).
-Верни ТОЛЬКО извлечённый текст, без комментариев и пояснений.`,
-            },
-          ],
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Llama 4 Scout (OCR) қатесі ${response.status}: ${err?.error?.message || response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content.trim();
-};
-
-// ─────────────────────────────────────────────
-// ШАГ 2: АНАЛИЗ — Llama 3.3 анализирует текст
-// Принимает строку, возвращает { score, hits, safe }
-// ─────────────────────────────────────────────
-const analyzeTextForFraud = async (inputText) => {
-  const apiKey = process.env.REACT_APP_GROQ_API_KEY;
-
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile", // Мощная модель — глубокий анализ
-      temperature: 0.1,
-      max_tokens: 512,
-      messages: [
-        {
-          role: "system",
-          content: `Ты эксперт по кибербезопасности Казахстана. 
-Анализируешь тексты на мошенничество: финансовые пирамиды, фишинг, вишинг, 
-поддельные госвыплаты (42500 тенге, ЕНПФ, Минтруд), фейковые розыгрыши.
-Отвечай ТОЛЬКО валидным JSON без markdown и пояснений.`,
-        },
-        {
-          role: "user",
-          content: `Проанализируй текст на мошенничество:
-
-"""
-${inputText}
-"""
-
-Ответ строго в JSON:
-{
-  "score": <число 0-100, процент риска>,
-  "hits": ["конкретный триггер 1", "конкретный триггер 2"],
-  "safe": <true если score < 30, иначе false>
-}`,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Llama 3.3 (анализ) қатесі ${response.status}: ${err?.error?.message || response.statusText}`);
-  }
-
-  const data = await response.json();
-  const raw = data.choices[0].message.content.trim();
-  const clean = raw.replace(/```json|```/gi, "").trim();
-  const parsed = JSON.parse(clean);
-
-  return {
-    score: Number(parsed.score) || 0,
-    hits: Array.isArray(parsed.hits) ? parsed.hits : [],
-    safe: Boolean(parsed.safe ?? parsed.score < 30),
-  };
-};
-
-// ─────────────────────────────────────────────
-// КОМПОНЕНТ
-// ─────────────────────────────────────────────
 export default function HomePage({ setPage, t }) {
   const ht = t?.home || {};
 
@@ -134,55 +14,74 @@ export default function HomePage({ setPage, t }) {
   const [result, setResult] = useState(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingStage, setLoadingStage] = useState(""); // "ocr" | "analysis"
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Анализ текста — только Llama 3.3
+  // Points to your Railway backend in production, or localhost during development
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://senim-backend-production.up.railway.app';
+
+  // ─────────────────────────────────────────────
+  // TEXT ANALYSIS VIA BACKEND
+  // ─────────────────────────────────────────────
   const checkText = async () => {
     if (!text.trim()) return;
     setLoading(true);
-    setLoadingStage("analysis");
     setResult(null);
 
     try {
-      const analysis = await analyzeTextForFraud(text);
-      setResult({ ...analysis, type: "text" });
+      const response = await fetch(`${API_BASE_URL}/api/scan/text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Server error");
+      setResult({ ...data, type: "text" });
+
     } catch (error) {
       console.error("Анализ қатесі:", error);
       setResult({ score: 0, hits: [], safe: true, type: "text", error: error.message });
     } finally {
       setLoading(false);
-      setLoadingStage("");
     }
   };
 
-  // Анализ файла — сначала Llama 4 Scout (OCR), потом Llama 3.3 (анализ)
+  // ─────────────────────────────────────────────
+  // FILE ANALYSIS VIA BACKEND (OCR + Llama)
+  // ─────────────────────────────────────────────
   const analyzeFile = async (uploadedFile) => {
     if (!uploadedFile) return;
     setLoading(true);
     setResult(null);
     setRecognizedText("");
 
-    try {
-      // Шаг 1: OCR через Llama 4 Scout
-      setLoadingStage("ocr");
-      const extracted = await extractTextFromImage(uploadedFile);
-      setRecognizedText(extracted);
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
 
-      // Шаг 2: Анализ через Llama 3.3
-      setLoadingStage("analysis");
-      const analysis = await analyzeTextForFraud(extracted);
-      setResult({ ...analysis, type: "file" });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/scan/image`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Server error");
+
+      setRecognizedText(data.extractedText || "");
+      setResult({ ...data, type: "file" });
+
     } catch (error) {
       console.error("OCR / Анализ қатесі:", error);
       setResult({ score: 0, hits: [], safe: true, type: "file", error: error.message });
     } finally {
       setLoading(false);
-      setLoadingStage("");
     }
   };
 
+  // ─────────────────────────────────────────────
+  // DRAG AND DROP HANDLERS
+  // ─────────────────────────────────────────────
   const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const onDragLeave = () => setIsDragging(false);
   const onDrop = (e) => {
@@ -202,14 +101,9 @@ export default function HomePage({ setPage, t }) {
     }
   };
 
-  // Текст лоадера в зависимости от стадии
-  const loadingText = loadingStage === "ocr"
-      ? (ht?.ocrLoading || "Llama 4 Scout суретті оқуда…")
-      : (ht?.scanning || "Llama 3.3 талдауда…");
-
   return (
       <div>
-        {/* HERO */}
+        {/* HERO SECTION */}
         <section style={{
           background: `linear-gradient(135deg, ${COLORS.blue} 0%, ${COLORS.blueMid} 100%)`,
           color: "white", padding: "5rem 1.25rem 4rem", textAlign: "center"
@@ -231,7 +125,7 @@ export default function HomePage({ setPage, t }) {
               {ht?.heroSub || "Біздің AI мәтінді немесе суреттегі чатты оқып, алаяқтық ықтималдығын пайызбен көрсетеді."}
             </p>
 
-            {/* Бейдж моделей */}
+            {/* AI Models Badge */}
             <div style={{
               display: "inline-flex", gap: 12, marginBottom: "1.5rem",
               background: "rgba(255,255,255,0.1)", borderRadius: 12, padding: "8px 16px"
@@ -245,12 +139,12 @@ export default function HomePage({ setPage, t }) {
             </span>
             </div>
 
-            {/* КАРТОЧКА */}
+            {/* SCANNER CARD */}
             <div style={{
               background: "white", borderRadius: 16, padding: "1.25rem",
               boxShadow: "0 20px 60px rgba(0,0,0,0.25)"
             }}>
-              {/* Табы */}
+              {/* Tabs */}
               <div style={{ display: "flex", gap: 10, marginBottom: "1rem" }}>
                 {[
                   { key: "text", label: ht?.modeText || "Мәтінді тексеру" },
@@ -272,7 +166,7 @@ export default function HomePage({ setPage, t }) {
                 ))}
               </div>
 
-              {/* Текстовый режим */}
+              {/* Text Mode */}
               {mode === "text" && (
                   <>
                 <textarea
@@ -299,16 +193,13 @@ export default function HomePage({ setPage, t }) {
                             opacity: !text.trim() ? 0.6 : 1, transition: "all 0.2s"
                           }}
                       >
-                        {loading
-                            ? <>{loadingText}</>
-                            : <><Search size={16} /> {ht?.scanBtn || "Тексеру"}</>
-                        }
+                        {loading ? (ht?.scanning || "Талдануда…") : <><Search size={16} /> {ht?.scanBtn || "Тексеру"}</>}
                       </button>
                     </div>
                   </>
               )}
 
-              {/* Файловый режим */}
+              {/* File Mode */}
               {mode === "file" && (
                   <div
                       onDragOver={onDragOver}
@@ -330,13 +221,9 @@ export default function HomePage({ setPage, t }) {
                     />
                     {loading ? (
                         <div style={{ color: COLORS.blue, fontWeight: 600 }}>
-                          <div style={{ marginBottom: 8, fontSize: 24 }}>
-                            {loadingStage === "ocr" ? "👁️" : "🧠"}
-                          </div>
-                          <div>{loadingText}</div>
-                          <div style={{ fontSize: 12, color: COLORS.gray, marginTop: 4 }}>
-                            {loadingStage === "ocr" ? "Llama 4 Scout Vision..." : "Llama 3.3 70b..."}
-                          </div>
+                          <div style={{ marginBottom: 8, fontSize: 24 }}>🧠</div>
+                          <div>{ht?.ocrLoading || "AI мәліметтерді өңдеуде... Күте тұрыңыз"}</div>
+                          <div style={{ fontSize: 12, color: COLORS.gray, marginTop: 4 }}>Server-side processing</div>
                         </div>
                     ) : file ? (
                         <div style={{ color: COLORS.green, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -356,24 +243,24 @@ export default function HomePage({ setPage, t }) {
                   </div>
               )}
 
-              {/* РЕЗУЛЬТАТ */}
+              {/* RESULTS */}
               {result && (
                   <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
 
-                    {/* Ошибка API */}
+                    {/* API Error */}
                     {result.error ? (
                         <div style={{
                           background: "#fff8e1", border: "1.5px solid #f59e0b",
                           borderRadius: 10, padding: "1rem", color: "#92400e", fontSize: 14
                         }}>
-                          ⚠️ {ht?.apiError || "API қатесі. Кілтті тексеріңіз."}{" "}
+                          ⚠️ {ht?.apiError || "Сервер қатесі. Қайта көріңіз."}{" "}
                           <code style={{ fontSize: 12, display: "block", marginTop: 4, wordBreak: "break-all" }}>
                             {result.error}
                           </code>
                         </div>
                     ) : (
                         <>
-                          {/* Основной результат */}
+                          {/* Score Card */}
                           <div style={{
                             background: result.safe ? COLORS.greenLight : COLORS.redLight,
                             border: `1.5px solid ${result.safe ? "#059669" : "#dc2626"}`,
@@ -391,14 +278,9 @@ export default function HomePage({ setPage, t }) {
                             </div>
                             <div style={{ textAlign: "left" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                {result.safe
-                                    ? <CheckCircle size={18} color={COLORS.green} />
-                                    : <XCircle size={18} color={COLORS.red} />
-                                }
+                                {result.safe ? <CheckCircle size={18} color={COLORS.green} /> : <XCircle size={18} color={COLORS.red} />}
                                 <span style={{ fontWeight: 700, color: result.safe ? "#065f46" : "#991b1b", fontSize: 16 }}>
-                            {result.safe
-                                ? (ht?.resultSafe || "Қауіпсіз болуы мүмкін")
-                                : (ht?.resultUnsafe || "Алаяқтық қаупі өте жоғары!")}
+                            {result.safe ? (ht?.resultSafe || "Қауіпсіз болуы мүмкін") : (ht?.resultUnsafe || "Алаяқтық қаупі өте жоғары!")}
                           </span>
                               </div>
                               <p style={{ fontSize: 13, color: result.safe ? "#065f46" : "#991b1b", margin: 0 }}>
@@ -406,7 +288,7 @@ export default function HomePage({ setPage, t }) {
                                     ? <>{ht?.foundThreats || "Табылған қауіптер:"} <strong>{result.hits.join(", ")}</strong></>
                                     : (ht?.noThreats || "AI күдікті маркерлерді тапқан жоқ.")}
                               </p>
-                              {/* Бейдж использованных моделей */}
+                              {/* Models Used Badge */}
                               <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
                                 {result.type === "file" && (
                                     <span style={{ fontSize: 11, background: "#ede9fe", color: "#6d28d9", borderRadius: 6, padding: "2px 8px" }}>
@@ -420,7 +302,7 @@ export default function HomePage({ setPage, t }) {
                             </div>
                           </div>
 
-                          {/* Экстренные действия при риске >= 75% */}
+                          {/* Emergency Actions if Risk >= 75% */}
                           {result.score >= 75 && (
                               <div style={{
                                 background: "#fff5f5", border: "1px solid #dc2626",
@@ -456,7 +338,7 @@ export default function HomePage({ setPage, t }) {
                         </>
                     )}
 
-                    {/* Распознанный текст со скриншота */}
+                    {/* Extracted OCR Text Display */}
                     {mode === "file" && recognizedText && (
                         <div style={{
                           background: COLORS.grayLight, border: `1px solid ${COLORS.border}`,
@@ -479,7 +361,7 @@ export default function HomePage({ setPage, t }) {
           </div>
         </section>
 
-        {/* СТАТИСТИКА */}
+        {/* STATISTICS */}
         <section style={{ background: COLORS.green, padding: "1.5rem 1.25rem" }}>
           <div style={{
             maxWidth: 1100, margin: "0 auto",
@@ -499,7 +381,7 @@ export default function HomePage({ setPage, t }) {
           </div>
         </section>
 
-        {/* КАК ЭТО РАБОТАЕТ */}
+        {/* HOW IT WORKS */}
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "4rem 1.25rem" }}>
           <h2 style={{ textAlign: "center", fontSize: "1.6rem", fontWeight: 700, color: COLORS.blue, marginBottom: "0.5rem" }}>
             {ht?.hiwTitle || "Бұл қалай жұмыс істейді"}
